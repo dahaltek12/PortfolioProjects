@@ -48,7 +48,6 @@ FROM Movies
 ORDER BY profit DESC
 LIMIT 10
 
---- top 10 lowest profit movies---
 
 ---most popular generes---
 
@@ -87,18 +86,26 @@ SELECT certificate, COUNT(*) AS Total
  Limit 10
  
   ---how many movies in each decade---
+
   
- SELECT 
-    year/10 * 10 + 1 as decade_start,
-    year/10 * 10 + 10 as decade_end,
+ 
+  .......Number Movies in each  Decade
+SELECT
+    decade_start || ' - ' || decade_end as decade,
     COUNT(year) as number_of_movies
-FROM  Movies
-GROUP BY year/10 
-ORDER BY decade_start 
-  
-  ---most popular movie genre in each decade---
-  
-   WITH genre_counts AS (
+FROM (
+    SELECT 
+        (year/10) * 10 + 1 as decade_start,
+        (year/10) * 10 + 10 as decade_end,
+        year
+    FROM Movies
+) AS subquery
+GROUP BY decade_start
+ORDER BY decade_start
+
+....most popular movie genere in decade.....
+
+WITH genre_counts AS (
   SELECT genre, COUNT(*) AS genre_count, year
   FROM (
     SELECT TRIM(value) AS genre, year
@@ -107,19 +114,20 @@ ORDER BY decade_start
   )
   GROUP BY genre, year
 ), decade_max_genre AS (
-  SELECT d.decade_start, d.decade_end, gc.genre,
-         ROW_NUMBER() OVER (PARTITION BY d.decade_start ORDER BY gc.genre_count DESC) AS rn
+  SELECT 
+    d.decade_start || ' - ' || d.decade_end AS decade,
+    gc.genre,
+    ROW_NUMBER() OVER (PARTITION BY d.decade_start ORDER BY gc.genre_count DESC) AS rn
   FROM (
     SELECT 
-      year/10 * 10 + 1 AS decade_start,
-      year/10 * 10 + 10 AS decade_end
+      (year/10) * 10 + 1 AS decade_start,
+      (year/10) * 10 + 10 AS decade_end
     FROM Movies
     GROUP BY year/10
   ) d
   JOIN genre_counts gc ON gc.year >= d.decade_start AND gc.year <= d.decade_end
 )
-SELECT decade_start, decade_end, genre
+SELECT decade, genre
 FROM decade_max_genre
 WHERE rn = 1
-ORDER BY decade_start
-
+ORDER BY decade
